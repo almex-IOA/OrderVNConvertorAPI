@@ -13,7 +13,7 @@ import { TargetOrder, emptyTargetOrder } from '../schema/targetSchema';
  *   מוצרים         -> productDescription
  *   מספר הזמנה     -> orderNumber
  *   תאריך הזמנה    -> receivedOn        (dd/mm/yyyy hh:mm -> yyyy-mm-dd)
- *   מספר משלוח     -> shipmentNumber
+ *   מספר מעקב      -> shipmentNumber
  *   הערות          -> notes
  *   מועדון         -> purchasedFrom
  *   משלוח          -> shipmentStatus
@@ -34,7 +34,7 @@ export function mapToTargetOrders(rows: InputRow[]): TargetOrder[] {
     target.productDescription = str(row['מוצרים']);
     target.orderNumber = str(row['מספר הזמנה']);
     target.receivedOn = normalizeDate(str(row['תאריך הזמנה']));
-    target.shipmentNumber = str(row['מספר משלוח']);
+    target.shipmentNumber = str(row['מספר מעקב']);
     target.notes = str(row['הערות']);
     target.purchasedFrom = str(row['מועדון']);
     // shippingCompany: no matching input column -> left empty.
