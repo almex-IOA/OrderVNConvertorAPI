@@ -12,7 +12,8 @@ npm run dev        # dev server with watch (tsx)
 npm run build && npm start
 ```
 
-Server: `http://localhost:3000` · Swagger UI: `http://localhost:3000/api-docs`
+- **Web UI**: `http://localhost:3000` — log in with the API credentials, upload a file, download the converted CSV.
+- **Swagger UI**: `http://localhost:3000/api-docs`
 
 ## Endpoint
 

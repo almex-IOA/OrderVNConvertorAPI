@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OrderVN Convertor</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --ok: #16a34a;
+      --err: #dc2626;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      font-size: 18px;
+      color: var(--ink);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card);
+      width: 100%;
+      max-width: 460px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      padding: 36px 32px;
+    }
+    h1 {
+      font-size: 30px;
+      margin: 0 0 4px;
+      text-align: center;
+    }
+    .subtitle {
+      color: var(--muted);
+      text-align: center;
+      margin: 0 0 28px;
+      font-size: 17px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="file"] {
+      width: 100%;
+      font-size: 18px;
+      padding: 13px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      margin-bottom: 20px;
+    }
+    input[type="file"] { padding: 11px 14px; }
+    input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    button {
+      width: 100%;
+      font-size: 19px;
+      font-weight: 600;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button:hover { background: var(--brand-dark); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    .link-btn {
+      background: none;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+      width: auto;
+      padding: 8px;
+      margin: 14px auto 0;
+      display: block;
+    }
+    .link-btn:hover { background: none; color: var(--ink); }
+    .msg {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      text-align: center;
+      display: none;
+    }
+    .msg.show { display: block; }
+    .msg.error { background: #fef2f2; color: var(--err); }
+    .msg.success { background: #f0fdf4; color: var(--ok); }
+    .msg.info { background: #eff6ff; color: var(--brand-dark); }
+    .hint {
+      color: var(--muted);
+      font-size: 15px;
+      margin: -8px 0 22px;
+    }
+    .hidden { display: none; }
+    .user-bar {
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 22px;
+    }
+    .user-bar b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Login view -->
+    <div id="loginView">
+      <h1>התחברות</h1>
+      <p class="subtitle">המרת קובץ הזמנות</p>
+      <form id="loginForm">
+        <label for="username">שם משתמש</label>
+        <input type="text" id="username" autocomplete="username" required />
+        <label for="password">סיסמה</label>
+        <input type="password" id="password" autocomplete="current-password" required />
+        <button type="submit" id="loginBtn">כניסה</button>
+      </form>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+
+    <!-- Convert view -->
+    <div id="convertView" class="hidden">
+      <h1>המרת קובץ</h1>
+      <p class="subtitle">העלו קובץ CSV או XLSX וקבלו קובץ מומר</p>
+      <div class="user-bar">מחובר כ־<b id="userLabel"></b></div>
+      <form id="convertForm">
+        <label for="file">בחרו קובץ</label>
+        <input type="file" id="file" accept=".csv,.xlsx" required />
+        <p class="hint">נתמכים קבצי ‎.csv‎ ו־‎.xlsx בלבד</p>
+        <button type="submit" id="convertBtn">המרה והורדה</button>
+      </form>
+      <button type="button" class="link-btn" id="logoutBtn">התנתקות</button>
+      <div class="msg" id="convertMsg"></div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const STORE_KEY = 'ordervn_auth';
+
+    function authHeader(user, pass) {
+      return 'Basic ' + btoa(user + ':' + pass);
+    }
+
+    function showMsg(el, text, type) {
+      el.textContent = text;
+      el.className = 'msg show ' + type;
+    }
+    function hideMsg(el) { el.className = 'msg'; }
+
+    function showConvertView(user) {
+      $('loginView').classList.add('hidden');
+      $('convertView').classList.remove('hidden');
+      $('userLabel').textContent = user;
+    }
+    function showLoginView() {
+      $('convertView').classList.add('hidden');
+      $('loginView').classList.remove('hidden');
+    }
+
+    // --- Login ---
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = $('username').value.trim();
+      const pass = $('password').value;
+      const btn = $('loginBtn');
+      hideMsg($('loginMsg'));
+      btn.disabled = true;
+      btn.textContent = 'מתחבר…';
+      try {
+        const res = await fetch('/api/auth', {
+          headers: { Authorization: authHeader(user, pass) },
+        });
+        if (res.ok) {
+          sessionStorage.setItem(STORE_KEY, JSON.stringify({ user, pass }));
+          showConvertView(user);
+        } else if (res.status === 401) {
+          showMsg($('loginMsg'), 'שם משתמש או סיסמה שגויים', 'error');
+        } else {
+          showMsg($('loginMsg'), 'שגיאה בהתחברות (' + res.status + ')', 'error');
+        }
+      } catch (err) {
+        showMsg($('loginMsg'), 'לא ניתן להתחבר לשרת', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'כניסה';
+      }
+    });
+
+    // --- Convert ---
+    $('convertForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saved = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+      if (!saved) { showLoginView(); return; }
+      const fileInput = $('file');
+      if (!fileInput.files.length) return;
+
+      const btn = $('convertBtn');
+      hideMsg($('convertMsg'));
+      btn.disabled = true;
+      btn.textContent = 'ממיר…';
+      try {
+        const form = new FormData();
+        form.append('file', fileInput.files[0]);
+        const res = await fetch('/api/convert', {
+          method: 'POST',
+          headers: { Authorization: authHeader(saved.user, saved.pass) },
+          body: form,
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'converted.csv';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          showMsg($('convertMsg'), 'הקובץ הומר והורד בהצלחה', 'success');
+          fileInput.value = '';
+        } else if (res.status === 401) {
+          sessionStorage.removeItem(STORE_KEY);
+          showLoginView();
+          showMsg($('loginMsg'), 'ההתחברות פגה, יש להתחבר מחדש', 'error');
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showMsg($('convertMsg'), data.error || 'שגיאה בהמרה (' + res.status + ')', 'error');
+        }
+      } catch (err) {
+        showMsg($('convertMsg'), 'שגיאה בשליחת הקובץ', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'המרה והורדה';
+      }
+    });
+
+    // --- Logout ---
+    $('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem(STORE_KEY);
+      $('password').value = '';
+      hideMsg($('convertMsg'));
+      showLoginView();
+    });
+
+    // --- Restore session on load ---
+    (function init() {
+      const saved = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+      if (saved && saved.user) showConvertView(saved.user);
+    })();
+  </script>
+</body>
+</html>

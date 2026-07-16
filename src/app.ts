@@ -1,3 +1,4 @@
+import path from 'path';
 import express, { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import swaggerUi from 'swagger-ui-express';
@@ -7,6 +8,9 @@ import { basicAuth } from './middleware/basicAuth';
 
 export function createApp() {
   const app = express();
+
+  // Static web UI (public/ at the project root). Serves index.html at '/'.
+  app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // Health check.
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));

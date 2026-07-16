@@ -10,4 +10,8 @@ const upload = multer({
 
 export const convertRouter = Router();
 
+// Lightweight auth check for the UI login screen. Reaching this handler means the
+// basicAuth middleware already validated the credentials.
+convertRouter.get('/auth', (_req, res) => res.json({ ok: true }));
+
 convertRouter.post('/convert', upload.single('file'), convert);
