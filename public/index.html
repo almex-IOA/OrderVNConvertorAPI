@@ -114,6 +114,51 @@
       margin: -8px 0 22px;
     }
     .hidden { display: none; }
+
+    /* Popup modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 30px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      text-align: center;
+    }
+    .modal .icon {
+      font-size: 44px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .modal h2 {
+      font-size: 24px;
+      margin: 0 0 10px;
+      color: var(--err);
+    }
+    .modal p { margin: 0 0 6px; font-size: 17px; }
+    .modal .cols {
+      text-align: right;
+      background: #fef2f2;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 16px 0 4px;
+      font-size: 16px;
+      max-height: 190px;
+      overflow: auto;
+    }
+    .modal .cols ul { margin: 6px 0 0; padding-inline-start: 22px; }
+    .modal button { margin-top: 20px; }
     .user-bar {
       text-align: center;
       color: var(--muted);
@@ -155,6 +200,20 @@
     </div>
   </div>
 
+  <!-- Problem popup -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="icon">⚠️</div>
+      <h2>בעיה בקובץ</h2>
+      <p id="modalText">הקובץ אינו תואם למבנה הנדרש.</p>
+      <div class="cols hidden" id="modalCols">
+        <span>עמודות חסרות בקובץ:</span>
+        <ul id="modalColsList"></ul>
+      </div>
+      <button type="button" id="modalCloseBtn">סגירה</button>
+    </div>
+  </div>
+
   <script>
     const $ = (id) => document.getElementById(id);
     const STORE_KEY = 'ordervn_auth';
@@ -168,6 +227,29 @@
       el.className = 'msg show ' + type;
     }
     function hideMsg(el) { el.className = 'msg'; }
+
+    // Popup for file problems.
+    function showProblem(text, missing) {
+      $('modalText').textContent = text || 'הקובץ אינו תואם למבנה הנדרש.';
+      const cols = $('modalCols');
+      const list = $('modalColsList');
+      list.innerHTML = '';
+      if (Array.isArray(missing) && missing.length) {
+        missing.forEach((c) => {
+          const li = document.createElement('li');
+          li.textContent = c;
+          list.appendChild(li);
+        });
+        cols.classList.remove('hidden');
+      } else {
+        cols.classList.add('hidden');
+      }
+      $('overlay').classList.add('show');
+    }
+    $('modalCloseBtn').addEventListener('click', () => $('overlay').classList.remove('show'));
+    $('overlay').addEventListener('click', (e) => {
+      if (e.target === $('overlay')) $('overlay').classList.remove('show');
+    });
 
     function showConvertView(user) {
       $('loginView').classList.add('hidden');
@@ -244,9 +326,13 @@
           sessionStorage.removeItem(STORE_KEY);
           showLoginView();
           showMsg($('loginMsg'), 'ההתחברות פגה, יש להתחבר מחדש', 'error');
+        } else if (res.status === 422) {
+          // Schema validation failed — show the problem popup.
+          const data = await res.json().catch(() => ({}));
+          showProblem(data.error, data.missing);
         } else {
           const data = await res.json().catch(() => ({}));
-          showMsg($('convertMsg'), data.error || 'שגיאה בהמרה (' + res.status + ')', 'error');
+          showProblem(data.error || 'שגיאה בהמרה (' + res.status + ')');
         }
       } catch (err) {
         showMsg($('convertMsg'), 'שגיאה בשליחת הקובץ', 'error');

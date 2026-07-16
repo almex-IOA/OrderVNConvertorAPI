@@ -79,6 +79,24 @@ export const openapiSpec = {
               },
             },
           },
+          '422': {
+            description: 'File does not match the expected input schema.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    error: { type: 'string' },
+                    missing: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      description: 'Expected columns absent from the uploaded file.',
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
     },

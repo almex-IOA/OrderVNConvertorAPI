@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { parseFile, UnsupportedFileTypeError } from '../services/fileParser';
 import { mapToTargetOrders } from '../services/mapper';
 import { toCsvBuffer } from '../services/csvWriter';
+import { validateInputSchema } from '../schema/inputSchema';
 
 /**
  * POST /api/convert
@@ -16,7 +17,18 @@ export function convert(req: Request, res: Response, next: NextFunction): void {
       return;
     }
 
-    const rows = parseFile(file.buffer, file.originalname);
+    const { headers, rows } = parseFile(file.buffer, file.originalname);
+
+    // Validation layer: reject files that aren't in the expected input schema.
+    const validation = validateInputSchema(headers);
+    if (!validation.valid) {
+      res.status(422).json({
+        error: 'הקובץ אינו תואם למבנה הנדרש',
+        missing: validation.missing,
+      });
+      return;
+    }
+
     const orders = mapToTargetOrders(rows);
     const csv = toCsvBuffer(orders);
 
